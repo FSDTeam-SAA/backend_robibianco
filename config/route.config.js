@@ -5,6 +5,7 @@ import authRoutes from "../src/routes/auth.routes.js";
 
 import userRoutes from "../src/routes/user.routes.js";
 
+import { rewardRouter } from "./routes/rewards.routes.js";
 
 const router = express.Router();
 
@@ -14,4 +15,5 @@ const router = express.Router();
 
 router.use("/auth", authRoutes);
 router.use("/user", userRoutes);
+app.use("/api/v1", rewardRouter);
 export default router;
