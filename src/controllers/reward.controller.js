@@ -33,13 +33,25 @@ export const createReward = catchAsync(async (req, res) => {
 });
 
 export const getAllRewards = catchAsync(async (req, res) => {
-  const rewards = await Reward.find().sort({ createdAt: -1 });
+  const { page = 1, limit = 10 } = req.query;
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  const totalRewards = await Reward.countDocuments();
+  const rewards = await Reward.find()
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(parseInt(limit));
 
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Rewards retrieved successfully",
-    data: rewards,
+    data: {
+      total: totalRewards,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      rewards,
+    },
   });
 });
 

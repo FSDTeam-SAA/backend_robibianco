@@ -1,9 +1,19 @@
 import express from "express";
-import { getDashboardData } from "../controllers/dashboard.controller.js";
-
+import {
+  getDashboardAnalytics,
+  getAllUsers,
+  getUserDetails,
+} from "../controllers/dashboard.controller.js";
+import {
+  isAuthenticated,
+  restrictTo,
+} from "../middlewares/auth.middlewares.js";
 
 const router = express.Router();
 
-router.get("/admin/overview", getDashboardData);
+router.use(isAuthenticated, restrictTo("admin"));
+router.get("/dashboard", getDashboardAnalytics);
+router.get("/users", getAllUsers);
+router.get("/users/:id", getUserDetails);
 
-export default router;
+export const dashboardRouter = router;
