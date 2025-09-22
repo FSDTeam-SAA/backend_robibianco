@@ -9,15 +9,15 @@ import { profileRouter } from "../src/routes/profile.routes.js";
 
 const router = express.Router();
 
-// Mounting the routes
-
-// router.use("/payment", paymentRoutes);
-
+// Mounting the routes without redundant '/api/v1' prefix
+// The '/api/v1' prefix is already defined in app.js
 router.use("/auth", authRoutes);
 router.use("/user", userRoutes);
-router.use("/api/v1", rewardRouter);
-router.use("/api/v1", reviewRouter);
-router.use("/api/v1", dashboardRouter);
-router.use("/api/v1", profileRouter);
+
+// These routers should be mounted without any prefix here
+router.use("/", rewardRouter);
+router.use("/", reviewRouter);
+router.use("/", dashboardRouter);
+router.use("/", profileRouter);
 
 export default router;
