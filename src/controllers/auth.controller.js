@@ -14,91 +14,50 @@ const generateToken = (userId, secret, expiry) => {
   return jwt.sign({ id: userId }, secret, { expiresIn: expiry });
 };
 
-// Signup with role-based logic and email verification via OTP
 export const signup = catchAsync(async (req, res, next) => {
-  const {
-    fullName,
-    phone,
-    email,
-    gender,
-    categoryId,
-    role, // Role can be "user" or "seller"
-    password,
-    confirmPassword,
-  } = req.body;
+  const { fullName, phone, gender, email, password, confirmPassword } =
+    req.body;
 
-  // Validate required fields
-  if (
-    !fullName ||
-    !phone ||
-    !gender ||
-    !email ||
-    !password ||
-    !confirmPassword ||
-    !role
-  ) {
-    return next(
-      new AppError(
-        400,
-        "Full name, phone, gender, email, password, confirm password, and role are required"
-      )
+  if (!fullName || !email || !password || !confirmPassword) {
+    throw new AppError(
+      400,
+      "Full name, email, password, and confirm password are required"
     );
   }
+
   if (password !== confirmPassword) {
-    return next(new AppError(400, "Passwords do not match"));
+    throw new AppError(400, "Password and confirm password do not match");
   }
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return next(new AppError(400, "Email already registered"));
+    throw new AppError(400, "User already exists with this email");
   }
 
-  // Validate role
-  if (role !== "user" && role !== "seller") {
-    return next(new AppError(400, "Role must be either 'user' or 'seller'"));
-  }
-
-  const userData = {
-    email,
-    password,
+  const newUser = await User.create({
     fullName,
     phone,
     gender,
-    role,
-    isEmailVerified: false,
-  };
-  if (role === "seller") {
-    if (!categoryId) {
-      return next(
-        new AppError(400, "Service category is required for sellers")
-      );
+    email,
+    password,
+    role: "admin",
+  });
+
+  const accessToken = jwt.sign(
+    { id: newUser._id, role: newUser.role },
+    process.env.JWT_ACCESS_SECRET,
+    {
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     }
-    userData.category = [categoryId];
-    userData.status = "pending";
-  } else {
-    userData.status = "active";
-  }
-
-  let user;
-  try {
-    user = await User.create(userData);
-  } catch (err) {
-    console.error("User creation error:", err);
-    return next(new AppError(500, "Error creating user", err));
-  }
-
-  user.isEmailVerified = true;
-  await user.save();
+  );
 
   sendResponse(res, {
     statusCode: 201,
     success: true,
-    message:
-      "User registered successfully. Please verify the OTP sent to your email to complete registration.",
+    message: "Admin user created successfully",
     data: {
-      userId: user._id,
-      email: user.email,
-      fullName: user.fullName,
+      user: newUser,
+      token: accessToken,
     },
   });
 });

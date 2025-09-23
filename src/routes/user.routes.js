@@ -1,32 +1,23 @@
+// user.routes.js
 import express from "express";
 import {
-  getProfile,
-  updateProfile,
   allSeller,
   getRequestedSeller,
   updateRequestedSellerStatus,
   topRatedSellers,
 } from "../controllers/user.controller.js";
-import { isAuthenticated } from "../middlewares/auth.middlewares.js";
-import upload from "../middlewares/multer.middlewares.js";
+import {
+  isAuthenticated,
+  restrictTo,
+} from "../middlewares/auth.middlewares.js";
 
 const router = express.Router();
 
-router.get("/profile", isAuthenticated, getProfile);
-router.get("/top-rated-sellers", isAuthenticated, topRatedSellers);
-router.patch(
-  "/update-profile",
-  isAuthenticated,
-  upload.single("profileImage"),
-  updateProfile
-);
+router.use(isAuthenticated, restrictTo("admin"));
 
-router.get("/all-seller", isAuthenticated, allSeller);
-router.get("/requested-seller", isAuthenticated, getRequestedSeller);
-router.patch(
-  "/update-requested-seller/:id",
-  isAuthenticated,
-  updateRequestedSellerStatus
-);
+router.get("/top-rated-sellers", topRatedSellers);
+router.get("/all-seller", allSeller);
+router.get("/requested-seller", getRequestedSeller);
+router.patch("/update-requested-seller/:id", updateRequestedSellerStatus);
 
 export default router;

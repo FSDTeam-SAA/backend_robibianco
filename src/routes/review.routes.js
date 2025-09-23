@@ -12,17 +12,8 @@ import upload from "../middlewares/multer.middlewares.js";
 
 const router = express.Router();
 
-router.post(
-  "/service/:serviceId",
-  isAuthenticated,
-  upload.single("reviewImage"),
-  createReview
-);
+router.post("/user/reviews", upload.single("reviewImage"), createReview);
 
-// User route to submit a review
-router.post("/user/reviews", isAuthenticated, createReview);
-
-// Admin routes for review management
 router.use(isAuthenticated, restrictTo("admin"));
 router.get("/admin/reviews", getAllReviews);
 router.get("/admin/reviews/:id", getReviewById);
