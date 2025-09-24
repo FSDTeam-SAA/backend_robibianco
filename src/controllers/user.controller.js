@@ -39,9 +39,8 @@ export const updateProfile = catchAsync(async (req, res) => {
     dateOfBirth,
     address,
     profileImage,
-  };
+  }; // Remove undefined or null fields
 
-  // Remove undefined or null fields
   Object.keys(updateData).forEach(
     (key) => updateData[key] === undefined && delete updateData[key]
   );
@@ -76,7 +75,7 @@ export const changePassword = catchAsync(async (req, res) => {
     throw new AppError(400, "New password and confirm password do not match");
   }
 
-  if (!(await User.isPasswordMatched(currentPassword, user.password))) {
+  if (!(await user.comparePassword(currentPassword))) {
     throw new AppError(400, "Current password is incorrect");
   }
 
@@ -91,7 +90,109 @@ export const changePassword = catchAsync(async (req, res) => {
   });
 });
 
-//  Admin route admin only access this
+// Admin route to get all users with pagination and filters
+export const getAllUsers = catchAsync(async (req, res, next) => {
+  const { page = 1, limit = 10, filter = "all" } = req.query;
+  const skip = (page - 1) * limit;
+
+  let query = { role: "user" }; // Only fetch users with the 'user' role
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (filter === "recent") {
+    // "Recent Users" is defined as users created in the last 24 hours
+    query.createdAt = { $gte: today };
+  } else if (filter === "lastWeek") {
+    const lastWeek = new Date(today);
+    lastWeek.setDate(today.getDate() - 7);
+    query.createdAt = { $gte: lastWeek };
+  } else if (filter === "lastMonth") {
+    const lastMonth = new Date(today);
+    lastMonth.setDate(today.getDate() - 30);
+    query.createdAt = { $gte: lastMonth };
+  } // We also need to fetch rewards for each user. A simple way to do this is to get the reviews associated with the user.
+
+  const users = await User.find(query)
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const totalUsers = await User.countDocuments(query); // Manually fetching the review and reward information for each user.
+
+  const usersWithRewards = await Promise.all(
+    users.map(async (user) => {
+      const userReviews = await Review.find({ email: user.email }).populate(
+        "spinResult"
+      );
+      const totalRewards = userReviews.filter(
+        (r) => !r.spinResult.isTryAgain
+      ).length;
+      const totalSpins = userReviews.length;
+
+      return {
+        ...user,
+        totalSpins,
+        totalRewards,
+      };
+    })
+  );
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Users retrieved successfully.",
+    data: {
+      users: usersWithRewards,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+    },
+  });
+});
+
+// Admin route to get a single user's details and rewards
+export const getUserDetails = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    return next(new AppError(404, "User not found."));
+  }
+
+  const userReviews = await Review.find({ email: user.email }).populate(
+    "spinResult"
+  );
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "User details retrieved successfully.",
+    data: {
+      user,
+      rewards: userReviews,
+    },
+  });
+});
+
+// Admin route to get all sellers
+export const allSeller = catchAsync(async (req, res) => {
+  const sellers = await User.find({ role: "seller" })
+    .select("-password -refreshToken -resetPasswordOTP -resetPasswordOTPExpiry")
+    .lean();
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: sellers.length
+      ? "Sellers retrieved successfully"
+      : "No sellers found",
+    data: {
+      count: sellers.length,
+      sellers,
+    },
+  });
+});
+
 export const getRequestedSeller = catchAsync(async (req, res) => {
   const requestedSeller = await User.find({ status: "pending" }).select(
     "-password -refreshToken -resetPasswordOTP -resetPasswordOTPExpiry"
@@ -120,24 +221,6 @@ export const updateRequestedSellerStatus = catchAsync(async (req, res) => {
 });
 
 // Get all sellers
-export const allSeller = catchAsync(async (req, res) => {
-  const sellers = await User.find({ role: "seller" })
-    .select("-password -refreshToken -resetPasswordOTP -resetPasswordOTPExpiry")
-    .lean();
-
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: sellers.length
-      ? "Sellers retrieved successfully"
-      : "No sellers found",
-    data: {
-      count: sellers.length,
-      sellers,
-    },
-  });
-});
-
 export const topRatedSellers = catchAsync(async (req, res) => {
   const sellers = await Review.aggregate([
     // Lookup service info for each review
@@ -149,9 +232,8 @@ export const topRatedSellers = catchAsync(async (req, res) => {
         as: "service",
       },
     },
-    { $unwind: "$service" },
+    { $unwind: "$service" }, // Lookup seller info from service
 
-    // Lookup seller info from service
     {
       $lookup: {
         from: "users",
@@ -160,16 +242,14 @@ export const topRatedSellers = catchAsync(async (req, res) => {
         as: "seller",
       },
     },
-    { $unwind: "$seller" },
+    { $unwind: "$seller" }, // Only sellers with correct role
 
-    // Only sellers with correct role
     {
       $match: {
         "seller.role": "seller",
       },
-    },
+    }, // Group reviews by seller and calculate avg rating
 
-    // Group reviews by seller and calculate avg rating
     {
       $group: {
         _id: "$seller._id",
@@ -177,12 +257,10 @@ export const topRatedSellers = catchAsync(async (req, res) => {
         averageRating: { $avg: "$rating" },
         totalReviews: { $sum: 1 },
       },
-    },
+    }, // Sort by avg rating, then by number of reviews
 
-    // Sort by avg rating, then by number of reviews
-    { $sort: { averageRating: -1, totalReviews: -1 } },
+    { $sort: { averageRating: -1, totalReviews: -1 } }, // Limit top N sellers
 
-    // Limit top N sellers
     { $limit: 10 },
   ]);
 

@@ -1,20 +1,10 @@
 import express from "express";
-import {
-  createReview,
-  getReviewsForService,
-} from "../controllers/review.controller.js";
-import { isAuthenticated } from "./../middlewares/auth.middlewares.js";
-import upload from "../middlewares/multer.middlewares.js";
+import { submitReview, spinWheel } from "../controllers/review.controller.js";
 
 const router = express.Router();
 
-router.post(
-  "/service/:serviceId",
-  isAuthenticated,
-  upload.single("reviewImage"),
-  createReview
-);
-
-router.get("/service/:serviceId", isAuthenticated, getReviewsForService);
+// User-facing "Spin & Win" review and prize routes
+router.post("/submit-review", submitReview);
+router.patch("/spin-wheel/:reviewId", spinWheel);
 
 export default router;

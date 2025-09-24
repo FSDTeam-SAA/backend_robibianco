@@ -18,9 +18,8 @@ export const io = new Server(server, {
 
 // WebSocket connection
 io.on("connection", (socket) => {
-  console.log("A client connected:", socket.id);
+  console.log("A client connected:", socket.id); // Join user-specific room for notifications
 
-  // Join user-specific room for notifications
   socket.on("joinChatRoom", (userId) => {
     if (userId) {
       socket.join(`chat_${userId}`);
