@@ -43,6 +43,13 @@ export const spinWheel = catchAsync(async (req, res, next) => {
     return next(new AppError(404, "Review not found."));
   }
 
+  // CRITICAL FIX: Check if the user has already spun the wheel for this review
+  if (review.spinResult) {
+    return next(
+      new AppError(400, "This review has already been used to spin the wheel.")
+    );
+  }
+
   // Find all available rewards (those with stock > 0)
   const availableRewards = await Reward.find({ stock: { $gt: 0 } });
 
@@ -79,6 +86,11 @@ export const spinWheel = catchAsync(async (req, res, next) => {
   if (!prizeResult) {
     prizeResult =
       availableRewards[Math.floor(Math.random() * availableRewards.length)];
+  }
+
+  // New check: if the chosen prize requires a review, but this user hasn't submitted one
+  if (prizeResult.requiresReview && (!review || review.rating === null)) {
+    prizeResult = tryAgainReward;
   }
 
   let prizeCode = prizeResult.isTryAgain ? null : generateUniqueCode();
