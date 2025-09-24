@@ -31,15 +31,15 @@ const reviewSchema = new mongoose.Schema(
     spinResult: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Reward",
-      default: null, // The spin result is null until the user spins
+      default: null,
     },
     prizeCode: {
       type: String,
-      default: null, // The prize code is null until the user spins and wins
+      default: null,
     },
     rewardClaimedStatus: {
       type: String,
-      enum: ["pending", "claimed", "not_eligible"], // not_eligible for "Try Again" prizes
+      enum: ["pending", "claimed", "not_eligible"],
       default: "pending",
     },
   },

@@ -2,17 +2,18 @@ import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
 // import { ioHandler } from "../app.js";
 import nodemailer from "nodemailer";
-// import { Notification } from "./../models/notification.model.js";
+// import { Notification } from "./../models/notification.js";
 dotenv.config();
 
-let codeCounter = 202000;
-export const generateUniqueCode = async () => {
-  const code = codeCounter++;
-  const existingProduct = await Product.findOne({ uniqueCode: code });
-  if (existingProduct) {
-    return generateUniqueCode();
+// New, corrected function for generating unique prize codes
+export const generateUniqueCode = () => {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  const charactersLength = characters.length;
+  for (let i = 0; i < 8; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
-  return code;
+  return result;
 };
 
 export const calculateDistance = (coords1, coords2) => {
@@ -98,28 +99,3 @@ export const uploadOnCloudinary = (fileBuffer, options = {}) => {
     stream.end(fileBuffer);
   });
 };
-
-// export const createNotification = async (userId, message, type) => {
-//   try {
-//     const notification = await Notification.create({
-//       userId,
-//       message,
-//       type,
-//     });
-
-//     ioHandler.to(`user_${userId}`).emit("newNotification", notification);
-
-//     return notification;
-//   } catch (error) {
-//     console.error("Error creating notification:", error);
-//     return null;
-//   }
-// };
-
-// export const markAsRead = async (notificationId, userId) => {
-//   return await Notification.findOneAndUpdate(
-//     { _id: notificationId, userId },
-//     { isRead: true },
-//     { new: true }
-//   );
-// };

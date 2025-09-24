@@ -3,20 +3,19 @@ import { Reward } from "../models/reward.model.js";
 import { sendResponse } from "../utility/helper.js";
 import catchAsync from "../utility/catchAsync.js";
 
-// Get spin count over time (daily, weekly, monthly)
 export const getSpinsOverTime = catchAsync(async (req, res, next) => {
   const { period = "daily" } = req.query; // 'daily', 'weekly', 'monthly'
   let groupByFormat, timePeriod;
 
   if (period === "daily") {
     groupByFormat = "%Y-%m-%d";
-    timePeriod = 7; // Last 7 days
+    timePeriod = 7;
   } else if (period === "weekly") {
     groupByFormat = "%Y-%W";
-    timePeriod = 4; // Last 4 weeks
+    timePeriod = 4;
   } else if (period === "monthly") {
     groupByFormat = "%Y-%m";
-    timePeriod = 12; // Last 12 months
+    timePeriod = 12;
   } else {
     return next(new AppError(400, "Invalid period specified."));
   }
@@ -60,7 +59,7 @@ export const getSpinsOverTime = catchAsync(async (req, res, next) => {
   });
 });
 
-// Get review distribution (positive vs negative)
+// Get review distribution - positive vs negative
 export const getReviewDistribution = catchAsync(async (req, res, next) => {
   const totalReviews = await Review.countDocuments();
   const positiveReviews = await Review.countDocuments({

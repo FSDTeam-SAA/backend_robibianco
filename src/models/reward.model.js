@@ -9,34 +9,35 @@ const rewardSchema = new mongoose.Schema(
     },
     description: {
       type: String,
+      required: true,
       trim: true,
     },
     couponCode: {
       type: String,
-      required: function () {
-        return !this.isTryAgain;
-      },
       trim: true,
-      unique: true,
+      sparse: true,
+      default: null,
+    },
+    stockLimit: {
+      type: Number,
+      required: true,
+      min: 0,
     },
     stock: {
       type: Number,
-      required: function () {
-        return !this.isTryAgain;
-      },
+      required: true,
       min: 0,
     },
-    expiry: {
-      type: Date,
-      required: function () {
-        return !this.isTryAgain;
-      },
+    expiryDays: {
+      type: Number,
+      required: true,
+      min: 0,
     },
-    requiresReview: {
+    isTryAgain: {
       type: Boolean,
       default: false,
     },
-    isTryAgain: {
+    requiresReview: {
       type: Boolean,
       default: false,
     },
@@ -45,5 +46,13 @@ const rewardSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// A hook to set initial stock to stockLimit
+rewardSchema.pre("save", function (next) {
+  if (this.isNew) {
+    this.stock = this.stockLimit;
+  }
+  next();
+});
 
 export const Reward = mongoose.model("Reward", rewardSchema);

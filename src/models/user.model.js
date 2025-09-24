@@ -27,7 +27,6 @@ const userSchema = new mongoose.Schema({
   ],
 });
 
-// Generate a unique user ID when the user is created 4 digit
 userSchema.pre("save", function (next) {
   if (this.isNew && !this.uniqueCode) {
     this.code = Math.floor(Math.random() * 9000) + 1000;
@@ -35,7 +34,6 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-// Hash password before saving
 userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
     this.password = await bcrypt.hash(this.password, 10);

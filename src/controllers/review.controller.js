@@ -5,7 +5,7 @@ import { sendResponse, generateUniqueCode } from "../utility/helper.js";
 import AppError from "../errors/appError.js";
 import catchAsync from "../utility/catchAsync.js";
 
-// User facing: Step 1 - Submit a review
+// User facing: Submit a review and get a spin result
 export const submitReview = catchAsync(async (req, res, next) => {
   const { fullName, email, phone, review, rating } = req.body;
 
@@ -13,18 +13,6 @@ export const submitReview = catchAsync(async (req, res, next) => {
     return next(
       new AppError(400, "Name, email, phone, review, and rating are required.")
     );
-  }
-
-  // Find or create a user entry
-  let user = await User.findOne({ email });
-  if (!user) {
-    user = await User.create({
-      fullName,
-      email,
-      phone,
-      role: "user",
-      // uniqueCode is handled by the model pre-save hook
-    });
   }
 
   const newReview = await Review.create({
@@ -38,55 +26,43 @@ export const submitReview = catchAsync(async (req, res, next) => {
   sendResponse(res, {
     statusCode: 201,
     success: true,
-    message: "Review submitted successfully. You can now spin the wheel.",
+    message:
+      "Review submitted successfully. Please spin the wheel for your prize.",
     data: {
       reviewId: newReview._id,
     },
   });
 });
 
-// User facing: Step 2 - Spin the wheel and get a result
+// User facing: Spin the wheel to get a prize
 export const spinWheel = catchAsync(async (req, res, next) => {
   const { reviewId } = req.params;
 
-  // Check if the review exists and has not been spun yet
   const review = await Review.findById(reviewId);
-
   if (!review) {
     return next(new AppError(404, "Review not found."));
-  }
-
-  if (review.spinResult) {
-    return next(new AppError(400, "This review has already been spun."));
   }
 
   // Find all available rewards (those with stock > 0)
   const availableRewards = await Reward.find({ stock: { $gt: 0 } });
 
-  // Find the "Try Again" reward
-  const tryAgainReward = await Reward.findOne({ isTryAgain: true });
-  if (!tryAgainReward) {
+  if (availableRewards.length === 0) {
     return next(
       new AppError(
-        500,
-        "No 'Try Again' reward is configured. Please contact the administrator."
+        404,
+        "No rewards are currently available. Please try again later."
       )
     );
   }
 
+  // Find the "Try Again" reward if it exists
+  const tryAgainReward = await Reward.findOne({ isTryAgain: true });
+
+  const allOptions = tryAgainReward
+    ? [...availableRewards, tryAgainReward]
+    : availableRewards;
+
   let prizeResult;
-  let allOptions;
-
-  // Check if the reward requires a review and if a review has been submitted
-  const prizesRequiringReview = await Reward.find({ requiresReview: true });
-  const prizesNotRequiringReview = await Reward.find({ requiresReview: false });
-
-  // If a review has been submitted, select from all rewards. Otherwise, only from those not requiring a review.
-  if (review) {
-    allOptions = [...availableRewards, tryAgainReward];
-  } else {
-    allOptions = [...prizesNotRequiringReview, tryAgainReward];
-  }
 
   const totalStock = allOptions.reduce((sum, r) => sum + r.stock, 0);
   let randomNumber = Math.random() * totalStock;
@@ -99,24 +75,20 @@ export const spinWheel = catchAsync(async (req, res, next) => {
     randomNumber -= reward.stock;
   }
 
-  // Fallback in case of an issue with the weighted logic
+  // Fallback in case the weighted logic fails
   if (!prizeResult) {
-    prizeResult = tryAgainReward;
+    prizeResult =
+      availableRewards[Math.floor(Math.random() * availableRewards.length)];
   }
 
-  // Generate a unique prize code only if it's not a "Try Again" prize
-  const prizeCode = prizeResult.isTryAgain ? null : generateUniqueCode();
-  const rewardClaimedStatus = prizeResult.isTryAgain
-    ? "not_eligible"
-    : "pending";
+  let prizeCode = prizeResult.isTryAgain ? null : generateUniqueCode();
+  let rewardClaimedStatus = prizeResult.isTryAgain ? "not_eligible" : "pending";
 
-  // Update the review with the spin result
   review.spinResult = prizeResult._id;
   review.prizeCode = prizeCode;
   review.rewardClaimedStatus = rewardClaimedStatus;
   await review.save();
 
-  // Update the stock of the chosen reward if it's not "Try Again"
   if (!prizeResult.isTryAgain) {
     await Reward.findByIdAndUpdate(prizeResult._id, { $inc: { stock: -1 } });
   }
@@ -132,7 +104,7 @@ export const spinWheel = catchAsync(async (req, res, next) => {
         couponCode: prizeResult.couponCode,
         description: prizeResult.description,
         isTryAgain: prizeResult.isTryAgain,
-        prizeCode,
+        prizeCode: prizeCode,
       },
     },
   });
@@ -160,7 +132,7 @@ export const getAllReviews = catchAsync(async (req, res, next) => {
   }
 
   const reviews = await Review.find(query)
-    .populate("spinResult", "rewardName description couponCode") // Populate the reward details
+    .populate("spinResult", "rewardName description couponCode")
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 });

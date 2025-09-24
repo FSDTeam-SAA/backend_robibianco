@@ -1,5 +1,5 @@
 import { Reward } from "../models/reward.model.js";
-import { sendResponse } from "../utility/helper.js";
+import { sendResponse, generateUniqueCode } from "../utility/helper.js";
 import AppError from "../errors/appError.js";
 import catchAsync from "../utility/catchAsync.js";
 
@@ -7,13 +7,15 @@ import catchAsync from "../utility/catchAsync.js";
 export const createReward = catchAsync(async (req, res, next) => {
   const {
     rewardName,
-    description,
     couponCode,
     stockLimit,
     expiryDays,
+    description,
     isTryAgain,
+    requiresReview,
   } = req.body;
 
+  // Validation
   if (!rewardName || !stockLimit || !expiryDays || !description) {
     return next(
       new AppError(
@@ -21,8 +23,9 @@ export const createReward = catchAsync(async (req, res, next) => {
         "Reward name, stock, expiry, and description are required."
       )
     );
-  } // Handle coupon code requirement based on `isTryAgain`
+  }
 
+  // Handle coupon code requirement based on `isTryAgain`
   if (!isTryAgain && !couponCode) {
     return next(new AppError(400, "Coupon code is required for prizes."));
   }
@@ -30,10 +33,12 @@ export const createReward = catchAsync(async (req, res, next) => {
   const newReward = await Reward.create({
     rewardName,
     couponCode,
-    stock: stockLimit,
-    expiry: expiryDays,
+    stockLimit,
+    stock: stockLimit, // This maps the payload to the model
+    expiryDays,
     description,
     isTryAgain: isTryAgain || false,
+    requiresReview: requiresReview || false,
   });
 
   sendResponse(res, {
@@ -94,14 +99,17 @@ export const updateReward = catchAsync(async (req, res, next) => {
     expiryDays,
     description,
     isTryAgain,
+    requiresReview,
   } = req.body;
   const updateData = {
     rewardName,
     couponCode,
+    stockLimit,
     stock: stockLimit,
-    expiry: expiryDays,
+    expiryDays,
     description,
     isTryAgain,
+    requiresReview,
   };
 
   const updatedReward = await Reward.findByIdAndUpdate(
