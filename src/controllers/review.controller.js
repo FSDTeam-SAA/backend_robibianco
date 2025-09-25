@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { sendResponse, generateUniqueCode } from "../utility/helper.js";
 import AppError from "../errors/appError.js";
 import catchAsync from "../utility/catchAsync.js";
+import QRCode from "qrcode";
 
 // User facing: Submit a review and get a spin result
 export const submitReview = catchAsync(async (req, res, next) => {
@@ -43,7 +44,7 @@ export const spinWheel = catchAsync(async (req, res, next) => {
     return next(new AppError(404, "Review not found."));
   }
 
-  // CRITICAL FIX: Check if the user has already spun the wheel for this review
+  // CRITICAL FIX
   if (review.spinResult) {
     return next(
       new AppError(400, "This review has already been used to spin the wheel.")
@@ -105,6 +106,12 @@ export const spinWheel = catchAsync(async (req, res, next) => {
     await Reward.findByIdAndUpdate(prizeResult._id, { $inc: { stock: -1 } });
   }
 
+  // Generate QR code if there's a prize code
+  let qrCodeDataUrl = null;
+  if (prizeCode) {
+    qrCodeDataUrl = await QRCode.toDataURL(prizeCode);
+  }
+
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -117,12 +124,13 @@ export const spinWheel = catchAsync(async (req, res, next) => {
         description: prizeResult.description,
         isTryAgain: prizeResult.isTryAgain,
         prizeCode: prizeCode,
+        qrCodeDataUrl: qrCodeDataUrl,
       },
     },
   });
 });
 
-// Admin facing: Get all reviews with pagination and filters
+// Admin facing
 export const getAllReviews = catchAsync(async (req, res, next) => {
   const { page = 1, limit = 10, filter = "all" } = req.query;
   const skip = (page - 1) * limit;
@@ -165,7 +173,7 @@ export const getAllReviews = catchAsync(async (req, res, next) => {
   });
 });
 
-// Admin facing: Get a single review by ID
+// Admin facing
 export const getReviewById = catchAsync(async (req, res, next) => {
   const review = await Review.findById(req.params.id).populate(
     "spinResult",
@@ -183,7 +191,7 @@ export const getReviewById = catchAsync(async (req, res, next) => {
   });
 });
 
-// Admin facing: Delete a review by ID
+// Admin facing
 export const deleteReview = catchAsync(async (req, res, next) => {
   const deletedReview = await Review.findByIdAndDelete(req.params.id);
   if (!deletedReview) {
