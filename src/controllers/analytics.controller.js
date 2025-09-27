@@ -177,18 +177,56 @@ export const getReviewDistribution = catchAsync(async (req, res, next) => {
 
 // Get top rewards claimed
 export const getTopRewardsClaimed = catchAsync(async (req, res, next) => {
-  const topRewards = await Review.find({
+  const filter = req.query.filter || "daily";
+  const pageNumber = parseInt(req.query.page, 10) || 1;
+  const pageSize = parseInt(req.query.limit, 10) || 10;
+  const skip = (pageNumber - 1) * pageSize;
+
+  const now = new Date();
+  let startDate;
+
+  switch (filter) {
+    case "daily":
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      break;
+    case "weekly":
+      const dayOfWeek = now.getDay();
+      const daysSinceMonday = (dayOfWeek + 6) % 7;
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - daysSinceMonday);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case "monthly":
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    default:
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+
+  const query = {
     spinResult: { $exists: true },
     rewardClaimedStatus: "pending",
-  })
+    createdAt: { $gte: startDate },
+  };
+
+  const topRewards = await Review.find(query)
     .populate("spinResult", "rewardName")
     .sort({ createdAt: -1 })
-    .limit(10);
+    .skip(skip)
+    .limit(pageSize);
+
+  const total = await Review.countDocuments(query);
 
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Top rewards claimed retrieved successfully.",
     data: topRewards,
+    meta: {
+      page: pageNumber,
+      limit: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    },
   });
 });
