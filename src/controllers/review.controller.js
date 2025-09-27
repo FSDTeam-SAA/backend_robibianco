@@ -132,23 +132,41 @@ export const spinWheel = catchAsync(async (req, res, next) => {
 
 // Admin facing
 export const getAllReviews = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 10, filter = "all" } = req.query;
+  // Extract query params
+  const filter = req.query.filter || "all"; // daily | weekly | monthly | all
+  const page = parseInt(req.query.page , 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
   const skip = (page - 1) * limit;
 
   let query = {};
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
 
-  if (filter === "today") {
-    query = { createdAt: { $gte: today } };
-  } else if (filter === "lastWeek") {
-    const lastWeek = new Date(today);
-    lastWeek.setDate(today.getDate() - 7);
-    query = { createdAt: { $gte: lastWeek } };
-  } else if (filter === "lastMonth") {
-    const lastMonth = new Date(today);
-    lastMonth.setDate(today.getDate() - 30);
-    query = { createdAt: { $gte: lastMonth } };
+  if (filter !== "all") {
+    let startDate;
+
+    switch (filter) {
+      case "daily":
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+
+      case "weekly":
+        // Week starts on Monday
+        const dayOfWeek = now.getDay();
+        const daysSinceMonday = (dayOfWeek + 6) % 7;
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - daysSinceMonday);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+
+      case "monthly":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+
+      default:
+        startDate = new Date(0); // fallback: all dates
+    }
+
+    query.createdAt = { $gte: startDate };
   }
 
   const reviews = await Review.find(query)
@@ -165,8 +183,8 @@ export const getAllReviews = catchAsync(async (req, res, next) => {
     message: "Reviews retrieved successfully.",
     data: {
       reviews,
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page,
+      limit,
       totalReviews,
       totalPages: Math.ceil(totalReviews / limit),
     },
