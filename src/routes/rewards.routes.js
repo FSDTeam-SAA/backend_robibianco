@@ -12,13 +12,12 @@ import {
 
 const router = express.Router();
 
-// Admin routes - require authentication and admin role
-router
-  .route("/admin/rewards")
-  .get(isAuthenticated, restrictTo("admin"), getAllRewards)
-  .post(isAuthenticated, restrictTo("admin"), createReward);
+// Admin routes
+router.use(isAuthenticated, restrictTo("admin"));
+router.route("/admin/rewards").get(getAllRewards).post(createReward);
 
-router.route("/user/spin").post(spinWheel);
-router.route("/user/claim/:rewardId").post(claimReward);
+// User routes
+router.route("/user/spin").post(isAuthenticated, spinWheel);
+router.route("/user/claim/:rewardId").post(isAuthenticated, claimReward);
 
 export const rewardRouter = router;

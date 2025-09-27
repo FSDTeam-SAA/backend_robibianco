@@ -5,10 +5,12 @@ import { sendResponse } from "../utility/helper.js";
 
 // User: Create a new review
 export const createReview = catchAsync(async (req, res) => {
-  const { rating, comment } = req.body;
-  const userId = req.user._id;
+  const { rating, comment, userId } = req.body;
 
-  // Check if user has already submitted a review
+  if (!userId) {
+    throw new AppError(400, "User identifier is required.");
+  }
+
   const existingReview = await Review.findOne({ user: userId });
   if (existingReview) {
     throw new AppError(400, "You have already submitted a review.");

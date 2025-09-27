@@ -5,6 +5,7 @@ import catchAsync from "../utility/catchAsync.js";
 import { sendResponse } from "../utility/helper.js";
 import { Review } from "../models/review.model.js";
 
+// Admin: Create a new reward
 export const createReward = catchAsync(async (req, res) => {
   const {
     rewardName,
@@ -32,29 +33,19 @@ export const createReward = catchAsync(async (req, res) => {
   });
 });
 
+// Admin: Get all rewards
 export const getAllRewards = catchAsync(async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-
-  const totalRewards = await Reward.countDocuments();
-  const rewards = await Reward.find()
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(parseInt(limit));
+  const rewards = await Reward.find().sort({ createdAt: -1 });
 
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Rewards retrieved successfully",
-    data: {
-      total: totalRewards,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      rewards,
-    },
+    data: rewards,
   });
 });
 
+// User: Spin the wheel and claim a reward
 export const spinWheel = catchAsync(async (req, res) => {
   const userId = req.user._id;
 
@@ -95,6 +86,7 @@ export const spinWheel = catchAsync(async (req, res) => {
     });
   }
 
+  // Weighted random selection based on probability
   const randomNumber = Math.random() * totalProbability;
   let accumulatedProbability = 0;
   let winningReward = null;

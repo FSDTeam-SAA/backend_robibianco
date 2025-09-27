@@ -18,13 +18,12 @@ const rewardSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
-    //The total number of times this reward can be given out.
     stockLimit: {
       type: Number,
       required: true,
       min: 0,
     },
-    //virtual field to track the remaining stock
+    // This will be a virtual field to track the remaining stock
     // we will track this via a separate model (ClaimedReward)
     stockAvailable: {
       type: Number,
@@ -35,7 +34,6 @@ const rewardSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    // A boolean flag based on the admin form.
     requireReview: {
       type: Boolean,
       default: false,
@@ -50,6 +48,7 @@ const rewardSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Pre-save hook to set initial stock and probability (if needed)
 rewardSchema.pre("save", function (next) {
   if (this.isNew) {
     this.stockAvailable = this.stockLimit;
