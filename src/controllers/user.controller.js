@@ -119,21 +119,24 @@ export const getAllUsers = catchAsync(async (req, res, next) => {
     .lean();
 
   const totalUsers = await User.countDocuments(query); // Manually fetching the review and reward information for each user.
-
+  // const ratings = userReviews.map(r => r.spinResult?.rating).filter(Boolean);
   const usersWithRewards = await Promise.all(
     users.map(async (user) => {
       const userReviews = await Review.find({ email: user.email }).populate(
-        "spinResult"
+        "spinResult",
       );
       const totalRewards = userReviews.filter(
         (r) => !r.spinResult.isTryAgain
       ).length;
       const totalSpins = userReviews.length;
+   const ratings = userReviews.map(r => r.rating).filter(Boolean);
 
       return {
         ...user,
         totalSpins,
         totalRewards,
+        ratings
+        
       };
     })
   );
