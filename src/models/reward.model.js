@@ -9,50 +9,43 @@ const rewardSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: true,
       trim: true,
     },
+    // New Field: The actual code user receives upon claiming (e.g., "GET10OFF")
     couponCode: {
       type: String,
       trim: true,
-      sparse: true,
       default: null,
-    },
-    stockLimit: {
-      type: Number,
-      required: true,
-      min: 0,
     },
     stock: {
       type: Number,
       required: true,
       min: 0,
+      default: 1,
+    },
+    // The probability/weight is usually derived from the stock, but we keep this for structure
+    weight: {
+      type: Number,
+      default: 1,
     },
     expiryDays: {
       type: Number,
-      required: true,
-      min: 0,
+      default: 30, // Reward expires in 30 days unless specified otherwise
     },
+    // Flag to denote the "Try Again" slice, which does not count as a win/prize
     isTryAgain: {
       type: Boolean,
       default: false,
     },
-    requiresReview: {
-      type: Boolean,
-      default: false,
+    // Optional: Price/value of the reward for analytics
+    value: {
+      type: Number,
+      default: 0,
     },
   },
   {
     timestamps: true,
   }
 );
-
-// A hook to set initial stock to stockLimit
-rewardSchema.pre("save", function (next) {
-  if (this.isNew) {
-    this.stock = this.stockLimit;
-  }
-  next();
-});
 
 export const Reward = mongoose.model("Reward", rewardSchema);

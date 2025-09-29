@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
   {
+    // Pre-Spin Data (Initial Submission)
     name: {
       type: String,
       required: true,
@@ -12,22 +13,15 @@ const reviewSchema = new mongoose.Schema(
       required: true,
       trim: true,
       lowercase: true,
+      // Ensure one spin per email/review entry
+      unique: true,
     },
     phone: {
       type: String,
       trim: true,
     },
-    rating: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 5,
-    },
-    comment: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+
+    // Post-Spin/Prize Data
     spinResult: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Reward",
@@ -37,10 +31,31 @@ const reviewSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    rewardClaimedStatus: {
+
+    // Status tracking for the new flow
+    prizeStatus: {
       type: String,
-      enum: ["pending", "claimed", "not_eligible"],
+      enum: ["pre_spin", "won_pending_review", "won_claimed", "not_eligible"],
+      default: "pre_spin",
+    },
+
+    // Google Review Data (Mandatory for Prize Claim, now optional on this model)
+    googleReviewStatus: {
+      type: String,
+      enum: ["pending", "submitted", "verified"], // Used for tracking external Google Review
       default: "pending",
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: null, // No longer required on initial submission
+    },
+    comment: {
+      // Renamed from 'review' to 'comment' for clarity
+      type: String,
+      trim: true,
+      default: null, // No longer required on initial submission
     },
   },
   {
