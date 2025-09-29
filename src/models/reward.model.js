@@ -16,6 +16,9 @@ const rewardSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: null,
+      sparse: true,
+    
+     
     },
     stock: {
       type: Number,

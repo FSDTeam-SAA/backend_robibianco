@@ -41,12 +41,16 @@ export const generateVerificationCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-export const sendResponse = (res, { statusCode, success, message, data }) => {
+export const sendResponse = (
+  res,
+  { statusCode, success, message, data, meta }
+) => {
   res.status(statusCode).json({
     statusCode,
     success,
     message,
     data,
+    meta,
   });
 };
 
