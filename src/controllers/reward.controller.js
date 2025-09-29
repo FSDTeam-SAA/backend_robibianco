@@ -37,7 +37,7 @@ export const createReward = catchAsync(async (req, res, next) => {
     stock: stockLimit, // This maps the payload to the model
     expiryDays,
     description,
-    isTryAgain: isTryAgain || false,
+    isTryAgain,
     requiresReview: requiresReview || false,
   });
 
