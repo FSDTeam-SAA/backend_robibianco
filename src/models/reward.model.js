@@ -17,8 +17,6 @@ const rewardSchema = new mongoose.Schema(
       trim: true,
       default: null,
       sparse: true,
-    
-     
     },
     stock: {
       type: Number,
@@ -38,7 +36,7 @@ const rewardSchema = new mongoose.Schema(
     // Flag to denote the "Try Again" slice, which does not count as a win/prize
     isTryAgain: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     // Optional: Price/value of the reward for analytics
     value: {
