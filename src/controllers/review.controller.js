@@ -265,29 +265,23 @@ export const claimPrize = catchAsync(async (req, res, next) => {
 // Admin facing: Get all reviews
 // Update the query to include the new prizeStatus fields
 export const getAllReviews = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 10, filter = "all", status = "all" } = req.query;
+  const { page = 1, limit = 10, filter = "all" } = req.query;
   const skip = (page - 1) * limit;
 
   let query = {};
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Date filters (same as before)
   if (filter === "today") {
-    query.createdAt = { $gte: today };
+    query = { createdAt: { $gte: today } };
   } else if (filter === "lastWeek") {
     const lastWeek = new Date(today);
     lastWeek.setDate(today.getDate() - 7);
-    query.createdAt = { $gte: lastWeek };
+    query = { createdAt: { $gte: lastWeek } };
   } else if (filter === "lastMonth") {
     const lastMonth = new Date(today);
     lastMonth.setDate(today.getDate() - 30);
-    query.createdAt = { $gte: lastMonth };
-  }
-
-  // Status filter (new)
-  if (status !== "all") {
-    query.prizeStatus = status;
+    query = { createdAt: { $gte: lastMonth } };
   }
 
   // Include only entries that have at least spun the wheel
@@ -307,8 +301,8 @@ export const getAllReviews = catchAsync(async (req, res, next) => {
     message: "Reviews retrieved successfully.",
     data: {
       reviews,
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page,
+      limit,
       totalReviews,
       totalPages: Math.ceil(totalReviews / limit),
     },

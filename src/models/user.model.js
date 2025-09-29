@@ -19,13 +19,17 @@ const userSchema = new mongoose.Schema({
   resetPasswordOTP: { type: String, select: false },
   resetPasswordOTPExpiry: { type: Date, select: false },
   isEmailVerified: { type: Boolean, default: false },
+  
   category: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
     },
   ],
-});
+  
+},{
+    timestamps: true,
+  });
 
 userSchema.pre("save", function (next) {
   if (this.isNew && !this.uniqueCode) {
