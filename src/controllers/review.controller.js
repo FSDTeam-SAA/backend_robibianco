@@ -348,7 +348,7 @@ export const deleteReview = catchAsync(async (req, res, next) => {
 })
 
 export const getAllGooglereviews = catchAsync(async (req, res, next) => {
-  const PLACE_ID = 'ChIJK0h0P3oMwokR2t2XU4oV2i4'
+  const PLACE_ID = 'ChIJWSz0-FjP7kYR4vCxobamFU4'
   const API_KEY = 'AIzaSyA0ZFzzWU5APckWdn5lv6DjF52HXJXn_Bc'
 
   const response = await axios.get(
