@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const rewardSchema = new mongoose.Schema(
   {
@@ -36,7 +36,7 @@ const rewardSchema = new mongoose.Schema(
     // Flag to denote the "Try Again" slice, which does not count as a win/prize
     isTryAgain: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     // Optional: Price/value of the reward for analytics
     value: {
@@ -47,6 +47,6 @@ const rewardSchema = new mongoose.Schema(
   {
     timestamps: true,
   }
-);
+)
 
-export const Reward = mongoose.model("Reward", rewardSchema);
+export const Reward = mongoose.model('Reward', rewardSchema)
