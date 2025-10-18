@@ -20,6 +20,11 @@ const spinSchema = new mongoose.Schema(
     fingerprint: {
       type: String,
     },
+    status: {
+      type: String,
+      enum: ['pending', 'claimed'],
+      default: 'pending',
+    },
   },
   { timestamps: true }
 )
