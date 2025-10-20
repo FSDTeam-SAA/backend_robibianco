@@ -169,8 +169,6 @@ function generateDeviceFingerprint(ipAddress, userAgent) {
 //   })
 // })
 
-
-
 export const createSpin = catchAsync(async (req, res) => {
   const { rewardId } = req.body
   if (!rewardId) throw new AppError(400, 'Reward ID is required')
@@ -187,13 +185,19 @@ export const createSpin = catchAsync(async (req, res) => {
     })
   }
 
-  // ✅ 2. Fingerprint তৈরি করা
-  const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+  // ✅ 2. Fingerprint 
+  // const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+
+  // ✅ Get IP Address (Always use first IP)
+  let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+  if (ipAddress && typeof ipAddress === 'string') {
+    ipAddress = ipAddress.split(',')[0].trim()
+  }
+
   const userAgent = req.headers['user-agent']
   const deviceInfo = { userAgent }
   const fingerprint = generateDeviceFingerprint(ipAddress, userAgent)
 
-  // ✅ 3. মাসিক limit চেক
   const startOfMonth = new Date()
   startOfMonth.setDate(1)
   startOfMonth.setHours(0, 0, 0, 0)
@@ -250,7 +254,6 @@ export const createSpin = catchAsync(async (req, res) => {
     },
   })
 })
-
 
 export const getSpinById = catchAsync(async (req, res, next) => {
   const { id } = req.params
