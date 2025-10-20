@@ -3,7 +3,8 @@ import mongoose from 'mongoose'
 const spinSchema = new mongoose.Schema(
   {
     spinResult: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Reward', 
       required: true,
     },
     uniqueCode: {
