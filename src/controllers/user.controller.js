@@ -1,8 +1,9 @@
-import { User } from "../models/user.model.js";
-import { sendResponse, uploadOnCloudinary } from "../utility/helper.js";
 import AppError from "../errors/appError.js";
-import catchAsync from "../utility/catchAsync.js";
 import { Review } from "../models/review.model.js";
+import { User } from "../models/user.model.js";
+import catchAsync from "../utility/catchAsync.js";
+import { sendResponse, uploadOnCloudinary } from "../utility/helper.js";
+import bcrypt from "bcryptjs";
 
 // Get Profile
 export const getProfile = catchAsync(async (req, res) => {
@@ -66,6 +67,7 @@ export const updateProfile = catchAsync(async (req, res) => {
 // Change user password
 export const changePassword = catchAsync(async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
+
   const user = await User.findById(req.user._id).select("+password");
   if (!user) {
     throw new AppError(404, "User not found");
@@ -79,14 +81,24 @@ export const changePassword = catchAsync(async (req, res) => {
     throw new AppError(400, "Current password is incorrect");
   }
 
-  user.password = newPassword;
-  await user.save();
+  const hashedPassword = await bcrypt.hash(
+    newPassword,
+    10
+  );
+
+  const result = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      password: hashedPassword,
+    },
+    { new: true, runValidators: true }
+  ).select("-password -refreshToken -resetPasswordOTP -resetPasswordOTPExpiry");
 
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Password changed successfully",
-    data: user,
+    data: result,
   });
 });
 
@@ -123,20 +135,19 @@ export const getAllUsers = catchAsync(async (req, res, next) => {
   const usersWithRewards = await Promise.all(
     users.map(async (user) => {
       const userReviews = await Review.find({ email: user.email }).populate(
-        "spinResult",
+        "spinResult"
       );
       const totalRewards = userReviews.filter(
         (r) => !r.spinResult.isTryAgain
       ).length;
       const totalSpins = userReviews.length;
-   const ratings = userReviews.map(r => r.rating).filter(Boolean);
+      const ratings = userReviews.map((r) => r.rating).filter(Boolean);
 
       return {
         ...user,
         totalSpins,
         totalRewards,
-        ratings
-        
+        ratings,
       };
     })
   );
