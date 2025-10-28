@@ -185,7 +185,7 @@ export const createSpin = catchAsync(async (req, res) => {
     })
   }
 
-  // ✅ 2. Fingerprint 
+  // ✅ 2. Fingerprint
   // const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress
 
   // ✅ Get IP Address (Always use first IP)
@@ -258,7 +258,7 @@ export const createSpin = catchAsync(async (req, res) => {
 export const getSpinById = catchAsync(async (req, res, next) => {
   const { id } = req.params
 
-  const spin = await Spin.findById(id)
+  const spin = await Spin.findById(id).populate('spinResult')
   if (!spin) {
     throw new AppError(404, 'Spin not found')
   }
