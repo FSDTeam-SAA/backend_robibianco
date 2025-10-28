@@ -239,7 +239,7 @@ export const createSpin = catchAsync(async (req, res) => {
   newSpin = await Spin.findById(newSpin._id).populate('spinResult')
 
   // ✅ 7. QR Code তৈরি
-  const frontendLink = `https://robibianco-dashboard.vercel.app/reward/${newSpin._id}`
+  const frontendLink = `${process.env.ADMIN_URL}/reward/${newSpin._id}`
   const qrCodeImage = await QRCode.toDataURL(frontendLink)
 
   // ✅ 8. Response

@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
   dateOfBirth: { type: Date },
   address: { type: String },
   profileImage: { type: String },
-  address: { type: String },
+  // address: { type: String },
   uniqueCode: { type: Number, unique: true },
   role: { type: String, enum: ["user", "seller", "admin"] },
   status: { type: String, enum: ["active", "pending"], default: "active" },
